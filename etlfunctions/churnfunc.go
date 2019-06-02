@@ -10,7 +10,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/pandemicsyn/netlify/churnprofiles"
-	"github.com/pandemicsyn/netlify/internal"
+	utils "github.com/pandemicsyn/netlify/utils"
 )
 
 // GCSEvent is the stock struct for GCS events
@@ -35,7 +35,7 @@ func init() {
 	if err != nil {
 		log.Fatalf("Could not create pubsub client: %v", err)
 	}
-	topic, err = internal.CreateTopicIfNotExists(client, internal.DefaultTopic)
+	topic, err = utils.CreateTopicIfNotExists(client, utils.DefaultTopic)
 	if err != nil {
 		log.Fatalf("Could not create or acquire pubsub topic: %v", err)
 	}
@@ -61,7 +61,7 @@ func ChurnTransform(ctx context.Context, e GCSEvent) error {
 			log.Printf("Failed to transform file: %v", err)
 			return nil
 		}
-		payload, err := json.Marshal(internal.FileEvent{successBucketName, successObjectName, "created", 1})
+		payload, err := json.Marshal(utils.FileEvent{successBucketName, successObjectName, "created", 1})
 		if err != nil {
 			log.Printf("Failed to encode FileEvent json: %v", err)
 			// TODO: track differently than a regular failure - since new object already exists
