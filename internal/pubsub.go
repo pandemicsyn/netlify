@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
-	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 const DefaultSub = "enrichment-worker-test"
