@@ -4,7 +4,6 @@ A legacy system is delivering batched csv files consisting of customer profiles 
 
 # TODO
 
-- Emit success event to pubsub topic for downstream consumers
 - Wrap errors
 - Cleanup logging
 - Need to include hash/uuid in final object name to make sure that if +2 batch files arrive at the same time they don't end up with the same final name.
