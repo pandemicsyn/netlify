@@ -62,14 +62,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:47340f2adb0a0e00ac9ad5c0e951edc6ae9b2b6d8f243b1b2395d457ac5d5425"
+  digest = "1:9f6a534b2717ae5a749ca99a0519f110ee2fc30eda7e0284f15d7a4405314081"
   name = "github.com/pandemicsyn/netlify"
   packages = [
     "churnprofiles",
     "utils",
   ]
   pruneopts = "UT"
-  revision = "feec9f194a7851c59c9810e282ba23f072990ba0"
+  revision = "37086fb21decfff80b56bb70c966d6a7ed5433f3"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
