@@ -58,9 +58,6 @@ func EnrichAndStore(r io.Reader, store EProfileStore) error {
 			return err
 		}
 		p.ChurnScore = CalculateChurnRisk(p)
-		if p.CustomerID != "" {
-			profiles = append(profiles, p)
-		}
 		p.EnrichedAt = time.Now()
 		profiles = append(profiles, p)
 	}
