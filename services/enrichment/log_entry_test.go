@@ -2,11 +2,13 @@ package enrichment
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/pkg/errors"
 )
 
 func TestCreateOrFail(t *testing.T) {
@@ -14,24 +16,27 @@ func TestCreateOrFail(t *testing.T) {
 	if project == "" {
 		project = "netlify-242319"
 	}
-	testEntry := NewDatastoreEntry()
 	ctx := context.Background()
 	tmpKey := time.Now().String()
-	key := datastore.NameKey(ks, tmpKey, nil)
 	client, err := datastore.NewClient(ctx, project)
-	err = testEntry.CreateOrFail(key, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	logEntry := NewDatastoreLog(client)
+
+	err = logEntry.CreateOrFail(tmpKey, tmpKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	//key should exist
-	err = testEntry.CreateOrFail(key, client)
+	err = logEntry.CreateOrFail(tmpKey, tmpKey)
 	if err != nil {
 		if err != ErrLogEntryExists {
 			t.Fatal(err)
 		}
 	}
-
+	key := datastore.NameKey(ks, fmt.Sprintf("%s/%s", tmpKey, tmpKey), nil)
 	_ = client.Delete(ctx, key)
 }
 
@@ -40,23 +45,37 @@ func TestFinalize(t *testing.T) {
 	if project == "" {
 		project = "netlify-242319"
 	}
-	testEntry := NewDatastoreEntry()
 	ctx := context.Background()
 	tmpKey := time.Now().String()
-	key := datastore.NameKey(ks, tmpKey, nil)
 	client, err := datastore.NewClient(ctx, project)
-	err = testEntry.CreateOrFail(key, client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	logEntry := NewDatastoreLog(client)
+
+	//key should not yet exist, so this should fail
+	err = logEntry.Finalize(tmpKey, tmpKey)
+	if err != nil {
+		if errors.Cause(err) != datastore.ErrNoSuchEntity {
+			t.Fatal(err)
+		}
+	}
+	if err == nil {
+		t.Fatal("Expected Finalize LogEntry key to not yet exist, but it did!")
+	}
+
+	err = logEntry.CreateOrFail(tmpKey, tmpKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	//key should exist
-	err = testEntry.Finalize(key, client)
+	//key should exist - so we should be able to finalize the entry
+	err = logEntry.Finalize(tmpKey, tmpKey)
 	if err != nil {
 		if err != ErrLogEntryExists {
 			t.Fatal(err)
 		}
 	}
-
+	key := datastore.NameKey(ks, fmt.Sprintf("%s/%s", tmpKey, tmpKey), nil)
 	_ = client.Delete(ctx, key)
 }

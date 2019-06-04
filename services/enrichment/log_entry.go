@@ -2,34 +2,46 @@ package enrichment
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+)
+
+var (
+	ErrLogEntryExists = errors.New("churnfile log entry exists")
 )
 
 type LogEntry interface {
-	CreateOrFail(*datastore.Key, *datastore.Client) error
-	Finalize(*datastore.Key, *datastore.Client) error
+	CreateOrFail(bucket, object string) error
+	Finalize(bucket, object string) error
+}
+
+type DatastoreLog struct {
+	client *datastore.Client
 }
 
 type DatastoreLogEntry struct {
-	Success   bool
-	Started   time.Time
-	Completed time.Time
+	Success   bool      `datastore:"success:`
+	Started   time.Time `datastore:"started"`
+	Completed time.Time `datastore:"completed"`
 }
 
-func NewDatastoreEntry() LogEntry {
-	return &DatastoreLogEntry{}
+func NewDatastoreLog(client *datastore.Client) LogEntry {
+	return &DatastoreLog{client: client}
+}
+
+func (l *DatastoreLog) genKey(bucket, object string) *datastore.Key {
+	return datastore.NameKey(ks, fmt.Sprintf("%s/%s", bucket, object), nil)
 }
 
 // CreateOrFail creates a churn profile batch file log entry or fails if the entry
 // already exists (i.e. someone else already started to process it)
-func (l *DatastoreLogEntry) CreateOrFail(key *datastore.Key, client *datastore.Client) error {
-	log.Println(key.String())
+func (l *DatastoreLog) CreateOrFail(bucket, object string) error {
+	key := l.genKey(bucket, object)
 	ctx := context.Background()
-	_, err := client.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
+	_, err := l.client.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
 		var empty DatastoreLogEntry
 		err := tx.Get(key, &empty)
 		if err == nil {
@@ -48,9 +60,10 @@ func (l *DatastoreLogEntry) CreateOrFail(key *datastore.Key, client *datastore.C
 }
 
 // Finalize a churn profile batch file log entry thats been successfully processed
-func (l *DatastoreLogEntry) Finalize(key *datastore.Key, client *datastore.Client) error {
+func (l *DatastoreLog) Finalize(bucket, object string) error {
+	key := l.genKey(bucket, object)
 	ctx := context.Background()
-	tx, err := client.NewTransaction(ctx)
+	tx, err := l.client.NewTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get transaction to update log entry")
 	}

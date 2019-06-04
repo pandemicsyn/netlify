@@ -2,7 +2,6 @@ package enrichment
 
 import (
 	"context"
-	"io"
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub"
@@ -15,17 +14,15 @@ const sub = "enrichment-worker-test"
 const topic = "churn-enrichment-test"
 const ks = "churnfile"
 
-var (
-	ErrLogEntryExists = errors.New("churn file log entry exists")
-)
-
 type Worker struct {
-	project string
-	client  *pubsub.Client
-	topic   *pubsub.Topic
-	sub     *pubsub.Subscription
-	ds      *datastore.Client
-	os      *storage.Client
+	project      string
+	client       *pubsub.Client
+	topic        *pubsub.Topic
+	sub          *pubsub.Subscription
+	ds           *datastore.Client
+	logEntry     LogEntry
+	os           *storage.Client
+	profileStore ProfileStore
 }
 
 // New enrichment worker
@@ -54,12 +51,13 @@ func New(project string) (*Worker, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "creating datastore client failed")
 	}
+	w.logEntry = NewDatastoreLog(w.ds)
 
 	w.os, err = storage.NewClient(ctx)
-	return w, nil
-}
+	if err != nil {
+		return nil, errors.Wrap(err, "creating storage client failed")
+	}
+	w.profileStore = NewGCSProfileStore(w.os)
 
-func (w *Worker) profilesReader(bucket, object string) (io.Reader, error) {
-	ctx := context.Background()
-	return w.os.Bucket(bucket).Object(object).NewReader(ctx)
+	return w, nil
 }
