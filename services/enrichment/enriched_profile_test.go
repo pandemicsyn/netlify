@@ -21,17 +21,33 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
+type TestEProfileStore struct {
+	Error error
+}
+
+func (l *TestEProfileStore) BulkSave(profiles *[]EnrichedProfile) error {
+	return l.Error
+}
+
 func TestEnrichAndStore(t *testing.T) {
 	testJSON := `{"CustomerID":"9237-HQITU","Partner":"No","Dependents":"No","Tenure":2,"PhoneService":"Yes","MultipleLines":"No","InternetService":"Fiber optic","OnlineSecurity":"No","OnlineBackup":"No","DeviceProtection":"No","TechSupport":"No","StreamingTV":"No","StreamingMovies":"No","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":70.7,"TotalCharges":151.65}`
 	r := strings.NewReader(testJSON)
-	err := EnrichAndStore(r)
+	estore := &TestEProfileStore{nil}
+	err := EnrichAndStore(r, estore)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	estore = &TestEProfileStore{ErrTestErr}
+	err = EnrichAndStore(r, estore)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	badJSON := `"CustomerID":"9237-HQITU","Partner":"No","Dependents":"No","Tenure":2,"PhoneService":"Yes","MultipleLines":"No","InternetService":"Fiber optic","OnlineSecurity":"No","OnlineBackup":"No","DeviceProtection":"No","TechSupport":"No","StreamingTV":"No","StreamingMovies":"No","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":70.7,"TotalCharges":151.65}`
 	r = strings.NewReader(badJSON)
-	err = EnrichAndStore(r)
+	estore = &TestEProfileStore{nil}
+	err = EnrichAndStore(r, estore)
 	if err == nil {
 		t.Fatal("Bad json should have generated error")
 	}

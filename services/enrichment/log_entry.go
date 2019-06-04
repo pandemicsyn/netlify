@@ -10,18 +10,22 @@ import (
 )
 
 var (
+	//ErrLogEntryExists occurr's if a chunfile log entry is already present in log entry datastore
 	ErrLogEntryExists = errors.New("churnfile log entry exists")
 )
 
+// LogEntry is the basic mechanism we use to track whether .json churn files have already been processed
 type LogEntry interface {
 	CreateOrFail(bucket, object string) error
 	Finalize(bucket, object string) error
 }
 
+// DatastoreLog is a LogEntry backed by Google Cloud Datstore
 type DatastoreLog struct {
 	client *datastore.Client
 }
 
+// DatastoreLogEntry is the behind scene's schema we use in Google Cloud Datastore
 type DatastoreLogEntry struct {
 	Success   bool      `datastore:"success:`
 	Started   time.Time `datastore:"started"`

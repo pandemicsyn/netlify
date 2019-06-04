@@ -245,6 +245,7 @@ func TestCsvToJSON(t *testing.T) {
 	if len(p) != 5 {
 		t.Fatal("Expected 5 records but got", len(p))
 	}
+	
 	//make sure the header row is not present
 	if p[0].CustomerID == "customerID" {
 		t.Fatal("First record in json batch appears to be csv header")

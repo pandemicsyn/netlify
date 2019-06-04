@@ -1,10 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"os"
 
+	"github.com/pandemicsyn/netlify/services/enrichment"
 	log "github.com/sirupsen/logrus"
-	"github.com/pandemicsyn/scratch/netlify/services/enrichment"
 	"github.com/spf13/viper"
 )
 
@@ -34,12 +35,15 @@ func configureLogging(v *viper.Viper) {
 	}
 }
 
+var db *sql.DB
+
 func main() {
 
 	v := viper.New()
 	v.SetDefault("log_level", "info")
 	v.SetDefault("log_format", "text")
 	v.SetDefault("log_target", "stdout")
+	v.SetDefault("db", "postgres://postgres@localhost:32768/postgres?sslmode=disable")
 	v.SetEnvPrefix("churnapi")
 
 	v.SetConfigName("churnapi")
@@ -52,7 +56,16 @@ func main() {
 	if project == "" {
 		project = "netlify-242319"
 	}
-	w, err := enrichment.New(project)
+
+	var err error
+	db, err = sql.Open("postgres", v.GetString("db"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	log.Println(PrepareDB(db, false))
+
+	w, err := enrichment.New(project, db)
 	if err != nil {
 		log.Fatal(err)
 	}

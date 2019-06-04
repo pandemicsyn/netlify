@@ -2,6 +2,7 @@ package enrichment
 
 import (
 	"context"
+	"database/sql"
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub"
@@ -14,19 +15,22 @@ const sub = "enrichment-worker-test"
 const topic = "churn-enrichment-test"
 const ks = "churnfile"
 
+// Worker is our enrichment worker
 type Worker struct {
-	project      string
-	client       *pubsub.Client
-	topic        *pubsub.Topic
-	sub          *pubsub.Subscription
-	ds           *datastore.Client
-	logEntry     LogEntry
-	os           *storage.Client
-	profileStore ProfileStore
+	project       string
+	client        *pubsub.Client
+	topic         *pubsub.Topic
+	sub           *pubsub.Subscription
+	ds            *datastore.Client
+	logEntry      LogEntry
+	os            *storage.Client
+	profileStore  ProfileStore
+	db            *sql.DB
+	eprofileStore EProfileStore
 }
 
 // New enrichment worker
-func New(project string) (*Worker, error) {
+func New(project string, db *sql.DB) (*Worker, error) {
 	w := &Worker{
 		project: project,
 	}
@@ -58,6 +62,9 @@ func New(project string) (*Worker, error) {
 		return nil, errors.Wrap(err, "creating storage client failed")
 	}
 	w.profileStore = NewGCSProfileStore(w.os)
+
+	w.db = db
+	w.eprofileStore = NewPGEProfileStore(w.db)
 
 	return w, nil
 }
