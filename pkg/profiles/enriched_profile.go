@@ -1,4 +1,4 @@
-package enrichment
+package profiles
 
 import (
 	"bufio"
@@ -7,16 +7,37 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/pandemicsyn/netlify/churnprofiles"
 	"github.com/pkg/errors"
 )
 
 // EnrichedProfile is the original ChurnProfile plus the ChurnScore property
 // an EnrichedAt field is also included so that you can see changes for the profiles over time
 type EnrichedProfile struct {
-	churnprofiles.ChurnProfile
+	ChurnProfile
 	ChurnScore int
 	EnrichedAt time.Time
+}
+
+var eprofileProps = []string{
+	"CustomerID",
+	"Partner",
+	"Dependents",
+	"Tenure",
+	"PhoneService",
+	"MultipleLines",
+	"InternetService",
+	"OnlineSecurity",
+	"OnlineBackup",
+	"DeviceProtection",
+	"TechSupport",
+	"StreamingTV",
+	"StreamingMovies",
+	"Contract",
+	"PaperlessBilling",
+	"PaymentMethod",
+	"MonthlyCharges",
+	"TotalCharges",
+	"ChurnScore",
 }
 
 // CalculateChurnRisk just returns a random int to mock a churn risk score for a given profile

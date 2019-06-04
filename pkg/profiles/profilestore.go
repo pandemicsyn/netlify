@@ -1,4 +1,4 @@
-package enrichment
+package profiles
 
 import (
 	"context"

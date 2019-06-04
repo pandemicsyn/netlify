@@ -7,7 +7,8 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
-	"github.com/pandemicsyn/netlify/utils"
+	"github.com/pandemicsyn/netlify/pkg/profiles"
+	"github.com/pandemicsyn/netlify/pkg/utils"
 	"github.com/pkg/errors"
 )
 
@@ -24,9 +25,9 @@ type Worker struct {
 	ds            *datastore.Client
 	logEntry      LogEntry
 	os            *storage.Client
-	profileStore  ProfileStore
+	profileStore  profiles.ProfileStore
 	db            *sql.DB
-	eprofileStore EProfileStore
+	eprofileStore profiles.EProfileStore
 }
 
 // New enrichment worker
@@ -61,10 +62,10 @@ func New(project string, db *sql.DB) (*Worker, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "creating storage client failed")
 	}
-	w.profileStore = NewGCSProfileStore(w.os)
+	w.profileStore = profiles.NewGCSProfileStore(w.os)
 
 	w.db = db
-	w.eprofileStore = NewPGEProfileStore(w.db)
+	w.eprofileStore = profiles.NewPGEProfileStore(w.db)
 
 	return w, nil
 }

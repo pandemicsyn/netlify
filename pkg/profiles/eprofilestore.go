@@ -1,4 +1,4 @@
-package enrichment
+package profiles
 
 import (
 	"database/sql"
@@ -29,25 +29,7 @@ func (s *PGEProfileStore) BulkSave(profiles *[]EnrichedProfile) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := txn.Prepare(pq.CopyIn("enriched_profiles", "CustomerID",
-		"Partner",
-		"Dependents",
-		"Tenure",
-		"PhoneService",
-		"MultipleLines",
-		"InternetService",
-		"OnlineSecurity",
-		"OnlineBackup",
-		"DeviceProtection",
-		"TechSupport",
-		"StreamingTV",
-		"StreamingMovies",
-		"Contract",
-		"PaperlessBilling",
-		"PaymentMethod",
-		"MonthlyCharges",
-		"TotalCharges",
-		"ChurnScore"))
+	stmt, err := txn.Prepare(pq.CopyIn("enriched_profiles", eprofileProps...))
 
 	if err != nil {
 		return err

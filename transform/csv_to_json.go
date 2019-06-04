@@ -1,4 +1,4 @@
-package churnprofiles
+package transform
 
 import (
 	"encoding/csv"
@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"strconv"
+
+	"github.com/pandemicsyn/netlify/pkg/profiles"
 )
 
 // ErrBadCsvCol is returned whenever we encounter a csv row with column thats malformed
@@ -17,7 +19,7 @@ var ErrBadCsvCol = errors.New("Encountered malformed csv column in ")
 // by omitting the last 4 digits.
 //
 // TODO: return useful error types
-func setProfileValue(c *ChurnProfile, field string, value string) error {
+func setProfileValue(c *profiles.ChurnProfile, field string, value string) error {
 	switch field {
 	case "customerID":
 		c.CustomerID = value
@@ -101,7 +103,7 @@ func setProfileValue(c *ChurnProfile, field string, value string) error {
 	return nil
 }
 
-func loadProfile(p *ChurnProfile, record []string, headerFields []string) error {
+func loadProfile(p *profiles.ChurnProfile, record []string, headerFields []string) error {
 	for n, value := range record {
 		err := setProfileValue(p, headerFields[n], value)
 		if err != nil {
@@ -123,7 +125,7 @@ func CsvToJSON(csvSrc io.Reader, jsonDst io.Writer) error {
 	// TODO: should probably compare header to expected schema
 	var headerFields []string
 	for {
-		p := &ChurnProfile{}
+		p := &profiles.ChurnProfile{}
 		var err error
 		var record []string
 		if record, err = r.Read(); err != nil {

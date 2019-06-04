@@ -1,4 +1,4 @@
-package churnprofiles
+package profiles
 
 // ChurnProfile represents a single churn model record for a customer
 type ChurnProfile struct {

@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/pandemicsyn/netlify/churnprofiles"
-	utils "github.com/pandemicsyn/netlify/utils"
+	"github.com/pandemicsyn/netlify/pkg/events"
+	"github.com/pandemicsyn/netlify/pkg/utils"
+	"github.com/pandemicsyn/netlify/transform"
 )
 
 // GCSEvent is the stock struct for GCS events
@@ -53,7 +54,7 @@ func ChurnTransform(ctx context.Context, e GCSEvent) error {
 		log.Printf("New batch file %v/%v created", e.Bucket, e.Name)
 		now := time.Now()
 		successObjectName := fmt.Sprintf("%s/%s-churn-profiles.json", now.Format("2006-01-02"), now.Format("0304"))
-		err := churnprofiles.Transform(e.Bucket, e.Name, successBucketName, successBucketName)
+		err := transform.Transform(e.Bucket, e.Name, successBucketName, successBucketName)
 		if err != nil {
 			// TODO: if processing of the file fails we could place a temporary hold
 			// on the object until it can be reprocessed. This will make sure data isn't purged
@@ -61,7 +62,7 @@ func ChurnTransform(ctx context.Context, e GCSEvent) error {
 			log.Printf("Failed to transform file: %v", err)
 			return nil
 		}
-		payload, err := json.Marshal(utils.FileEvent{successBucketName, successObjectName, "created", 1})
+		payload, err := json.Marshal(events.FileEvent{successBucketName, successObjectName, events.StatusCreated, 1})
 		if err != nil {
 			log.Printf("Failed to encode FileEvent json: %v", err)
 			// TODO: track differently than a regular failure - since new object already exists

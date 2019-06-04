@@ -1,4 +1,4 @@
-package churnprofiles
+package transform
 
 import (
 	"context"

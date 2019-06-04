@@ -5,18 +5,17 @@ import (
 	"encoding/json"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/pandemicsyn/netlify/utils"
+	"github.com/pandemicsyn/netlify/pkg/events"
+	"github.com/pandemicsyn/netlify/pkg/profiles"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
-
-const FileCreated = "created"
 
 // handleFileEvent does the bulk of the work when a new file event is received from our ETL process.
 // right now it doesn't look utils.FileEvent.Status at all. In the future we have more than just 'created'
 // it could switch on status and handle the different FileEvent status accordingly. i.e. reprocess, delete, etc
 func (w *Worker) handleFileEvent(msg *pubsub.Message) error {
-	var e utils.FileEvent
+	var e events.FileEvent
 	if err := json.Unmarshal(msg.Data, &e); err != nil {
 		return errors.Wrap(err, "Could not decode FileEvent data")
 	}
@@ -41,7 +40,7 @@ func (w *Worker) handleFileEvent(msg *pubsub.Message) error {
 
 	// EnrichAndStore reads the json file out of storage, converting them to
 	// EnrichedProfiles with a mock ChurnScore, and stores the profiles in our primary datastore
-	err = EnrichAndStore(pio, w.eprofileStore)
+	err = profiles.EnrichAndStore(pio, w.eprofileStore)
 	if err != nil {
 		return errors.Wrap(err, "Error enriching or storing profiles")
 	}

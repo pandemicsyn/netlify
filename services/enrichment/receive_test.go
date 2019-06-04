@@ -7,9 +7,11 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/pandemicsyn/netlify/utils"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/pandemicsyn/netlify/pkg/events"
+	"github.com/pandemicsyn/netlify/pkg/profiles"
+
 )
 
 type TestLogEntry struct {
@@ -36,6 +38,14 @@ func (l *TestProfileStore) Reader(k, v string) (io.Reader, error) {
 	return l.R, l.Error
 }
 
+type TestEProfileStore struct {
+	Error error
+}
+
+func (l *TestEProfileStore) BulkSave(profiles *[]profiles.EnrichedProfile) error {
+	return l.Error
+}
+
 func TestHandleFileEvent(t *testing.T) {
 
 	w := Worker{
@@ -43,7 +53,7 @@ func TestHandleFileEvent(t *testing.T) {
 		eprofileStore: &TestEProfileStore{nil},
 	}
 
-	fe := utils.FileEvent{}
+	fe := events.FileEvent{}
 	data, _ := json.Marshal(fe)
 
 	//test garbage json
