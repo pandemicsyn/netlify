@@ -39,7 +39,8 @@ func (l *TestProfileStore) Reader(k, v string) (io.Reader, error) {
 func TestHandleFileEvent(t *testing.T) {
 
 	w := Worker{
-		logEntry: &TestLogEntry{ErrTestErr, nil},
+		logEntry:      &TestLogEntry{ErrTestErr, nil},
+		eprofileStore: &TestEProfileStore{nil},
 	}
 
 	fe := utils.FileEvent{}
