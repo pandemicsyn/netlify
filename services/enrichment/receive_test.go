@@ -7,11 +7,9 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/pandemicsyn/netlify/pkg/events"
 	"github.com/pandemicsyn/netlify/pkg/profiles"
-
+	"github.com/pkg/errors"
 )
 
 type TestLogEntry struct {
@@ -59,15 +57,14 @@ func TestHandleFileEvent(t *testing.T) {
 	//test garbage json
 	err := w.handleFileEvent(&pubsub.Message{Data: []byte("stuff")})
 	if err == nil {
-		t.Fatal("should have thrown unable to decode json error")
+		t.Fatal("Expected unable to decode json error, but receive no error")
 	}
-	log.Println("next")
 
 	//test ok json but logEntry.CreateOrFail finds log entry already exists
 	w.logEntry = &TestLogEntry{ErrLogEntryExists, nil}
 	err = w.handleFileEvent(&pubsub.Message{Data: data})
 	if err != nil {
-		t.Fatal("should have skipped this log as it should have already been seen")
+		t.Fatal("Should have skipped this log as it should have already been seen")
 	}
 
 	//test ok json but logEntry.CreateOrFail throws other error
@@ -75,10 +72,10 @@ func TestHandleFileEvent(t *testing.T) {
 	err = w.handleFileEvent(&pubsub.Message{Data: data})
 	if err != nil {
 		if !strings.HasPrefix(err.Error(), "Error creating log entry") {
-			t.Fatal("expected error about creating log entry but got this instead:", err)
+			t.Fatal("Expected error creating log entry but got:", err)
 		}
 	} else {
-		t.Fatal("expected error creating log entry but got nil")
+		t.Fatal("Expected error creating log entry but got nil.")
 	}
 
 	//test error from object store stream
@@ -86,7 +83,7 @@ func TestHandleFileEvent(t *testing.T) {
 	w.profileStore = &TestProfileStore{nil, ErrTestErr}
 	err = w.handleFileEvent(&pubsub.Message{Data: data})
 	if err == nil {
-		t.Fatal("Getting object store stream should have failed")
+		t.Fatal("Expected getting object store stream to fail")
 	}
 
 	//test ok enrichAndStore
@@ -96,7 +93,7 @@ func TestHandleFileEvent(t *testing.T) {
 	w.profileStore = &TestProfileStore{r, nil}
 	err = w.handleFileEvent(&pubsub.Message{Data: data})
 	if err != nil {
-		t.Fatal("should have had no issues enriching test profile", err)
+		t.Fatal("Expected no issues enriching profile but got:", err)
 	}
 
 	//test malformed profile in enrichAndStore
@@ -106,7 +103,7 @@ func TestHandleFileEvent(t *testing.T) {
 	w.profileStore = &TestProfileStore{r, nil}
 	err = w.handleFileEvent(&pubsub.Message{Data: data})
 	if err == nil {
-		t.Fatal("should have received err from EnrichAndStore")
+		t.Fatal("Expected err from EnrichAndStore due to malformed profile but got nil")
 	}
 
 	//test finalize log entry failed
@@ -116,6 +113,6 @@ func TestHandleFileEvent(t *testing.T) {
 	w.profileStore = &TestProfileStore{r, nil}
 	err = w.handleFileEvent(&pubsub.Message{Data: data})
 	if err == nil {
-		t.Fatal("should have received err while finalizing log entry")
+		t.Fatal("Expected error finalizing log entry but got nil")
 	}
 }

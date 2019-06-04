@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/storage"
 	"github.com/pandemicsyn/netlify/pkg/events"
 	"github.com/pandemicsyn/netlify/pkg/utils"
 	"github.com/pandemicsyn/netlify/transform"
@@ -42,10 +43,38 @@ func init() {
 	}
 }
 
+func convert(e GCSEvent, successBucketName string, successObjectName string) error {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		log.Printf("Failed to create client: %v", err)
+		return err
+	}
+	rc, err := client.Bucket(e.Bucket).Object(e.Name).NewReader(ctx)
+	if err != nil {
+		log.Printf("Failed to acquire Reader on csv: %v", err)
+		return err
+	}
+	defer rc.Close()
+	// TODO: write compressed file ?
+	wc := client.Bucket(successBucketName).Object(successObjectName).NewWriter(ctx)
+	wc.ContentType = "application/json"
+	err = transform.Transform(rc, wc)
+	if err != nil {
+		return err
+	}
+	// gcloud storage streaming writes most often error on close when object is finalized
+	if err := wc.Close(); err != nil {
+		//TODO: attempt to upload to failure bucket/preform recovery/notification etc
+		log.Printf("Error on object write close - likely failed: %v", err)
+		return err
+	}
+	return nil
+}
+
 // ChurnTransform runs the etl process to clean/transfrom churn data for
 // long term storage when the raw csv arrives at the interim bucket.
 func ChurnTransform(ctx context.Context, e GCSEvent) error {
-
 	if e.ResourceState == "not_exists" {
 		log.Printf("File %v removed unexpectedly", e.Name)
 		return nil
@@ -54,14 +83,7 @@ func ChurnTransform(ctx context.Context, e GCSEvent) error {
 		log.Printf("New batch file %v/%v created", e.Bucket, e.Name)
 		now := time.Now()
 		successObjectName := fmt.Sprintf("%s/%s-churn-profiles.json", now.Format("2006-01-02"), now.Format("0304"))
-		err := transform.Transform(e.Bucket, e.Name, successBucketName, successBucketName)
-		if err != nil {
-			// TODO: if processing of the file fails we could place a temporary hold
-			// on the object until it can be reprocessed. This will make sure data isn't purged
-			// from the bucket until we've successfully ingested it.
-			log.Printf("Failed to transform file: %v", err)
-			return nil
-		}
+		err := convert(e, successBucketName, successObjectName)
 		payload, err := json.Marshal(events.FileEvent{successBucketName, successObjectName, events.StatusCreated, 1})
 		if err != nil {
 			log.Printf("Failed to encode FileEvent json: %v", err)

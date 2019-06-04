@@ -240,22 +240,23 @@ func TestCsvToJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	p, err := getProfiles(bytes.NewReader(b.Bytes()))
 	if err != nil {
-		t.Fatal("Decoding json failed for some reason:", err)
+		t.Fatal("Expecting valid json but decoding failed:", err)
 	}
 	if len(p) != 5 {
-		t.Fatal("Expected 5 records but got", len(p))
+		t.Fatal("Expected 5 records, got:", len(p))
 	}
-	
-	//make sure the header row is not present
+
+	//make sure the header row is NOT present
 	if p[0].CustomerID == "customerID" {
-		t.Fatal("First record in json batch appears to be csv header")
+		t.Fatal("First record in json batch appears to be csv header:", p[0])
 	}
-
 	b.Reset()
-	r = strings.NewReader(badCsv)
 
+	// send good and bad csv rows
+	r = strings.NewReader(badCsv)
 	err = CsvToJSON(r, &b)
 	if err != nil {
 		t.Fatal(err)
@@ -263,7 +264,7 @@ func TestCsvToJSON(t *testing.T) {
 	p, err = getProfiles(bytes.NewReader(b.Bytes()))
 	if err != nil {
 		log.Println(string(b.Bytes()))
-		t.Fatal("Decoding json failed for some reason:", err)
+		t.Fatal("Expecting valid json but decoding failed:", err)
 	}
 	if len(p) != 2 {
 		log.Println("bytes:", string(b.Bytes()))

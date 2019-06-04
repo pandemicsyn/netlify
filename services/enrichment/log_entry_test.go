@@ -57,13 +57,14 @@ func TestFinalize(t *testing.T) {
 	err = logEntry.Finalize(tmpKey, tmpKey)
 	if err != nil {
 		if errors.Cause(err) != datastore.ErrNoSuchEntity {
-			t.Fatal(err)
+			t.Fatal("Unexpected error finalizing entry, expect ErrNoSuchEntity, got:", err)
 		}
 	}
 	if err == nil {
 		t.Fatal("Expected Finalize LogEntry key to not yet exist, but it did!")
 	}
 
+	// test successful creation and finalization
 	err = logEntry.CreateOrFail(tmpKey, tmpKey)
 	if err != nil {
 		t.Fatal(err)
@@ -76,6 +77,8 @@ func TestFinalize(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
+	//cleanup
 	key := datastore.NameKey(ks, fmt.Sprintf("%s/%s", tmpKey, tmpKey), nil)
 	_ = client.Delete(ctx, key)
 }
