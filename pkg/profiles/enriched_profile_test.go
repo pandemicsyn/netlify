@@ -1,6 +1,7 @@
-package enrichment
+package profiles
 
 import (
+	"errors"
 	"math/rand"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ func TestCalculateChurnRisk(t *testing.T) {
 	_ = CalculateChurnRisk(e)
 }
 
+var ErrTestErr = errors.New("Test Error")
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func RandStringRunes(n int) string {

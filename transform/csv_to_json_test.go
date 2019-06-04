@@ -1,4 +1,4 @@
-package churnprofiles
+package transform
 
 import (
 	"bufio"
@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/pandemicsyn/netlify/pkg/profiles"
 )
 
 func fileSrc() (*bufio.Reader, *os.File) {
@@ -51,7 +53,7 @@ func TestSetProfileValue(t *testing.T) {
 	}
 
 	for field, structField := range testStringCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, wantStr)
 		if err != nil {
 			t.Fatal(err)
@@ -76,7 +78,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test int columns with valid int
 	for field, structField := range testIntCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, intStrOk)
 		if err != nil {
 			t.Fatal(err)
@@ -90,7 +92,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test int columns with empty fields
 	for field, structField := range testIntCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, intStrEmpty)
 		if err != nil {
 			t.Fatal(err)
@@ -104,7 +106,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test int columns with space as field
 	for field, structField := range testIntCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, intStrSpace)
 		if err != nil {
 			t.Fatal(err)
@@ -118,7 +120,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test int with string content
 	for field, structField := range testIntCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, intBad)
 		if err == nil {
 			t.Fatalf("expected error for field '%v', sent string", structField)
@@ -139,7 +141,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test float columns with valid floats
 	for field, structField := range testFloatCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, floatStrOk)
 		if err != nil {
 			t.Fatal(err)
@@ -154,7 +156,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test float columns with empty fields
 	for field, structField := range testFloatCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, floatStrEmpty)
 		if err != nil {
 			t.Fatal(err)
@@ -169,7 +171,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test float columns with space as field
 	for field, structField := range testFloatCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, floatStrSpace)
 		if err != nil {
 			t.Fatal(err)
@@ -184,7 +186,7 @@ func TestSetProfileValue(t *testing.T) {
 
 	// test float with string content
 	for field, structField := range testFloatCols {
-		c := &ChurnProfile{}
+		c := &profiles.ChurnProfile{}
 		err := setProfileValue(c, field, floatBad)
 		if err == nil {
 			t.Fatalf("expected error for field '%v', sent string", structField)
@@ -192,7 +194,7 @@ func TestSetProfileValue(t *testing.T) {
 	}
 
 	// test non existent field
-	c := &ChurnProfile{}
+	c := &profiles.ChurnProfile{}
 	err := setProfileValue(c, "notpresent", "novalue")
 	if err != nil {
 		t.Fatal(err)
@@ -213,21 +215,21 @@ BAD,Male,0,No,No,34,Yes,No,DSL,Yes,No,Yes,No,No,No,One year,No,Mailed check,BAD,
 GOOD2,Female,0,Yes,No,1,No,No phone service,DSL,No,Yes,No,No,No,No,Month-to-month,Yes,Electronic check,29.85,29.85,No
 `
 
-func getProfiles(r io.Reader) ([]ChurnProfile, error) {
-	profiles := make([]ChurnProfile, 0)
+func getProfiles(r io.Reader) ([]profiles.ChurnProfile, error) {
+	p := make([]profiles.ChurnProfile, 0)
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		var p ChurnProfile
-		err := json.Unmarshal(scanner.Bytes(), &p)
+		var cp profiles.ChurnProfile
+		err := json.Unmarshal(scanner.Bytes(), &cp)
 		if err != nil {
-			return profiles, err
+			return p, err
 		}
-		profiles = append(profiles, p)
+		p = append(p, cp)
 	}
 	if err := scanner.Err(); err != nil {
-		return profiles, err
+		return p, err
 	}
-	return profiles, nil
+	return p, nil
 }
 
 func TestCsvToJSON(t *testing.T) {

@@ -32,6 +32,7 @@ type DatastoreLogEntry struct {
 	Completed time.Time `datastore:"completed"`
 }
 
+// NewDatastoreLog returns a LogEntry backed by Google Cloud Datastore
 func NewDatastoreLog(client *datastore.Client) LogEntry {
 	return &DatastoreLog{client: client}
 }

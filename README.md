@@ -8,9 +8,11 @@ Still a work in progress - theres an WIP branch/pull request for the worker that
 
 # components
 
-* etlfunctions - right now its just a single etl function (ChurnTransform), additional etl functions would live here
-* churnprofiles - package to work with the churn profile's and source files
-* services/enrichment - just a single worker (Enrichment) right now, that enriches ChurnProfiles with Churn Scores - and stores the EnrichedProfiles in our primary db (postgres)
+* etlfunctions - right now its just a single etl function (ChurnTransform) that gets invoked on csv upload to a cloud storage bucket
+* transform - package to transform csv's to ChurnProfile json files
+* pkg/events - the pubsub event the etlfunction emits to notify downstream subscribers a new json file is available
+* pkg/profiles - the package for our ChurnProfiles and EnrichedProfiles as well as the supporting sources/stores
+* services/enrichment - just a single worker (Enrichment) right now, that enriches ChurnProfiles with Churn Scores - and stores the resulting EnrichedProfiles in our primary db (postgres)
 
 # deployment (wip)
 
