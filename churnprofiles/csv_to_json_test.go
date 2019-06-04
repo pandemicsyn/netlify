@@ -2,10 +2,13 @@ package churnprofiles
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -193,5 +196,83 @@ func TestSetProfileValue(t *testing.T) {
 	err := setProfileValue(c, "notpresent", "novalue")
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+var goodCsv = `customerID,gender,SeniorCitizen,Partner,Dependents,tenure,PhoneService,MultipleLines,InternetService,OnlineSecurity,OnlineBackup,DeviceProtection,TechSupport,StreamingTV,StreamingMovies,Contract,PaperlessBilling,PaymentMethod,MonthlyCharges,TotalCharges,Churn
+7590-VHVEG,Female,0,Yes,No,1,No,No phone service,DSL,No,Yes,No,No,No,No,Month-to-month,Yes,Electronic check,29.85,29.85,No
+5575-GNVDE,Male,0,No,No,34,Yes,No,DSL,Yes,No,Yes,No,No,No,One year,No,Mailed check,56.95,1889.5,No
+3668-QPYBK,Male,0,No,No,2,Yes,No,DSL,Yes,Yes,No,No,No,No,Month-to-month,Yes,Mailed check,53.85,108.15,Yes
+7795-CFOCW,Male,0,No,No,45,No,No phone service,DSL,Yes,No,Yes,Yes,No,No,One year,No,Bank transfer (automatic),42.3,1840.75,No
+9237-HQITU,Female,0,No,No,2,Yes,No,Fiber optic,No,No,No,No,No,No,Month-to-month,Yes,Electronic check,70.7,151.65,Yes
+`
+
+var badCsv = `customerID,gender,SeniorCitizen,Partner,Dependents,tenure,PhoneService,MultipleLines,InternetService,OnlineSecurity,OnlineBackup,DeviceProtection,TechSupport,StreamingTV,StreamingMovies,Contract,PaperlessBilling,PaymentMethod,MonthlyCharges,TotalCharges,Churn
+GOOD1,Female,0,Yes,No,1,No,No phone service,DSL,No,Yes,No,No,No,No,Month-to-month,Yes,Electronic check,29.85,29.85,No
+BAD,Male,0,No,No,34,Yes,No,DSL,Yes,No,Yes,No,No,No,One year,No,Mailed check,BAD,BAD,No
+GOOD2,Female,0,Yes,No,1,No,No phone service,DSL,No,Yes,No,No,No,No,Month-to-month,Yes,Electronic check,29.85,29.85,No
+`
+
+func getProfiles(r io.Reader) ([]ChurnProfile, error) {
+	profiles := make([]ChurnProfile, 0)
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		var p ChurnProfile
+		err := json.Unmarshal(scanner.Bytes(), &p)
+		if err != nil {
+			return profiles, err
+		}
+		profiles = append(profiles, p)
+	}
+	if err := scanner.Err(); err != nil {
+		return profiles, err
+	}
+	return profiles, nil
+}
+
+func TestCsvToJSON(t *testing.T) {
+	var b bytes.Buffer
+	r := strings.NewReader(goodCsv)
+
+	err := CsvToJSON(r, &b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := getProfiles(bytes.NewReader(b.Bytes()))
+	if err != nil {
+		t.Fatal("Decoding json failed for some reason:", err)
+	}
+	if len(p) != 5 {
+		t.Fatal("Expected 5 records but got", len(p))
+	}
+	//make sure the header row is not present
+	if p[0].CustomerID == "customerID" {
+		t.Fatal("First record in json batch appears to be csv header")
+	}
+
+	b.Reset()
+	r = strings.NewReader(badCsv)
+
+	err = CsvToJSON(r, &b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err = getProfiles(bytes.NewReader(b.Bytes()))
+	if err != nil {
+		log.Println(string(b.Bytes()))
+		t.Fatal("Decoding json failed for some reason:", err)
+	}
+	if len(p) != 2 {
+		log.Println("bytes:", string(b.Bytes()))
+		t.Fatal("Expected only 2 valid records but got", len(p))
+	}
+	//make sure the bad row is not present
+	for i := range p {
+		if p[i].CustomerID == "customerID" {
+			t.Fatalf("CSV Header row present as json for some reason: index %d", i)
+		}
+		if p[i].CustomerID == "BAD" {
+			t.Fatalf("Malformed csv record present in json for some reason: index %d", i)
+		}
 	}
 }

@@ -9,6 +9,9 @@ import (
 	"strconv"
 )
 
+// ErrBadCsvCol is returned whenever we encounter a csv row with column thats malformed
+var ErrBadCsvCol = errors.New("Encountered malformed csv column in ")
+
 // setProfileValue parses and sets valid csv records in a ChurnProfile - gender and seniorCitizen
 // are intentionally omitted. If phone number was present this is where we'd also anonymize the number
 // by omitting the last 4 digits.
@@ -98,6 +101,20 @@ func setProfileValue(c *ChurnProfile, field string, value string) error {
 	return nil
 }
 
+func loadProfile(p *ChurnProfile, record []string, headerFields []string) error {
+	for n, value := range record {
+		err := setProfileValue(p, headerFields[n], value)
+		if err != nil {
+			// TODO: handle bad csv rows, whether logging, adding to skip file
+			// emitting metrics/notification etc, for now just skip this row
+			log.Printf("Encountered bad record: %v", record)
+			log.Printf("Record err: %v", err)
+			return ErrBadCsvCol
+		}
+	}
+	return nil
+}
+
 // CsvToJSON converts a stream of churn model records to json
 func CsvToJSON(csvSrc io.Reader, jsonDst io.Writer) error {
 	enc := json.NewEncoder(jsonDst)
@@ -117,23 +134,20 @@ func CsvToJSON(csvSrc io.Reader, jsonDst io.Writer) error {
 		}
 		if n == 0 {
 			headerFields = record
-			log.Println(record)
 		} else {
-			for n, value := range record {
-				err := setProfileValue(p, headerFields[n], value)
-				if err != nil {
-					// TODO: handle bad csv rows, whether logging, adding to skip file
-					// emitting metrics/notification etc, for now just skip this row
-					log.Printf("Encountered bad record: %v", record)
-					log.Printf("Record err: %v", err)
-					continue
-				}
+			err := loadProfile(p, record, headerFields)
+			if err == ErrBadCsvCol {
+				// TODO: handle bad csv rows, whether logging, adding to skip file
+				// emitting metrics/notification etc, for now just skip this row
+				log.Println("Encountered bad column, skipping row")
+				continue
+			}
+			if err := enc.Encode(&p); err != nil {
+				return err
 			}
 		}
 		n++
-		if err := enc.Encode(&p); err != nil {
-			return err
-		}
+		log.Println("seen", n)
 	}
 	//TODO: emit metrics around lines processed, skipped, etc
 	return nil
