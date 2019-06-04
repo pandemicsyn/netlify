@@ -14,8 +14,6 @@ Still a work in progress - theres an WIP branch/pull request for the worker that
 * pkg/profiles - the package for our ChurnProfiles and EnrichedProfiles as well as the supporting sources/stores
 * services/enrichment - just a single worker (Enrichment) right now, that enriches ChurnProfiles with Churn Scores - and stores the resulting EnrichedProfiles in our primary db (postgres)
 
-# deployment (wip)
-
 # todo
 
 - the HTTP GET /{customerID} endpoint
@@ -82,4 +80,3 @@ Its been awhile since I wrote a lot of Go. Got off to a bit of a rough start but
 # Specific Docs
 
 - etlfunctions/README.md
-- services/README.md (TODO)

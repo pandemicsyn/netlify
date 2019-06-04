@@ -4,8 +4,6 @@ A legacy system is delivering batched csv files consisting of customer profiles 
 
 # TODO
 
-- Little bit or reorganization
-- Cleanup logging
 - Need to include hash/uuid in final object name to make sure that if +2 batch files arrive at the same time they don't end up with the same final name.
 - If processing of the csv fails (i.e. schema change) we should place a temporary object hold on the problematic csv. That would prevent GCE from aging the object out before we get a chance to reprocess it. (https://cloud.google.com/storage/docs/bucket-lock#object-holds)
 
