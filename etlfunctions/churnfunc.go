@@ -33,6 +33,10 @@ var (
 func init() {
 	var err error
 	ctx := context.Background()
+	if project == "" {
+		project = "netlify-242319"
+	}
+
 	client, err = pubsub.NewClient(ctx, project)
 	if err != nil {
 		log.Fatalf("Could not create pubsub client: %v", err)

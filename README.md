@@ -77,6 +77,43 @@ Alternatively you could also remove services/enrichment/log_entry_test.go
 
 Its been awhile since I wrote a lot of Go. Got off to a bit of a rough start but its getting there.
 
-# Specific Docs
+# Additional Docs
 
 - etlfunctions/README.md
+
+# Running
+
+Unfortunately, I ran out of time before I could package this up nicely. However, the below should get you up and running with working instances.
+
+1. Deploy the cloud function (additional details in etlfuncions/README.md)
+
+```
+gcloud functions deploy ChurnTransform --runtime go111 --trigger-resource netlify-churncsv --trigger-event google.storage.object.finalize
+```
+
+2. Start cloud datastore emulator if you want to use a local instance (you can harass me for my credentials or substitute your own)
+
+```
+export GOOGLE_APPLICATION_CREDENTIALS=/Users/fhines/netlify-3d7e758e0a98.json
+export DATASTORE_DATASET=netlify-242319
+export DATASTORE_EMULATOR_HOST=localhost:8081
+export DATASTORE_EMULATOR_HOST_PATH=localhost:8081/datastore
+export DATASTORE_HOST=http://localhost:8081
+export DATASTORE_PROJECT_ID=netlify-242319
+gcloud beta emulators datastore start --no-store-on-disk
+```
+
+3. Start a postgres instance (the default docker image will work fine)
+
+```
+docker run --name postgres -e POSTGRES_PASSWORD=secret -d postgres
+```
+
+4. start the worker service (again using either my credentials or your own)
+
+```
+ENRICHMENT_DB="postgres://postgres:secret@localhost:32768/postgres?sslmode=disable" GOOGLE_CLOUD_PROJECT=netlify-242319 go run cmd/enrichment/*.go
+```
+
+
+
