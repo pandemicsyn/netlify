@@ -41,7 +41,7 @@ FileEvent
 
 # random note
 
-Its been awhile since I wrote a lot of Go. I'm finding it surprisingly difficult to come back and remember how to structure my application in away that makes it easy to unittest it while leveraging Cloud Services.
+Its been awhile since I wrote a lot of Go. Got off to a bit of a rough start but its getting there.
 
 # Specific Docs
 

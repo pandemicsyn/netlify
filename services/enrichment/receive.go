@@ -1,0 +1,68 @@
+package enrichment
+
+import (
+	"context"
+	"encoding/json"
+
+	"cloud.google.com/go/pubsub"
+	"github.com/pandemicsyn/netlify/utils"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+)
+
+func (w *Worker) handleFileEvent(msg *pubsub.Message) error {
+	var e utils.FileEvent
+	if err := json.Unmarshal(msg.Data, &e); err != nil {
+		return errors.Wrap(err, "Could not decode FileEvent data")
+	}
+	log.Debugf("Received notification: %v", e)
+	// We create a log entry in google datastore when we start to process the file
+	// if theres already an entry for the file we skip it as another process serviced it
+	err := w.logEntry.CreateOrFail(e.Bucket, e.Object)
+	if err != nil {
+		if err == ErrLogEntryExists {
+			log.Info("File already seen")
+			return nil
+		}
+		return errors.Wrap(err, "Error creating log entry")
+	}
+
+	// next we snag an io.Reader of the file in storage
+	pio, err := w.profileStore.Reader(e.Bucket, e.Object)
+	if err != nil {
+		return errors.Wrap(err, "Error getting object store stream")
+	}
+
+	// EnrichAndStore reads the json file out of storage, converting them to
+	// EnrichedProfiles with a mock ChurnScore, and stores the profiles in our primary datastore
+	err = EnrichAndStore(pio)
+	if err != nil {
+		return errors.Wrap(err, "Error enriching or storing profiles")
+	}
+
+	// lastly we finalize the log entry indicating it was completed successfully.
+	err = w.logEntry.Finalize(e.Bucket, e.Object)
+	if err != nil {
+		return errors.Wrap(err, "Error finalizing log entry")
+	}
+	return nil
+}
+
+// Receive pull's file events off of churn profile notification topic
+// when a new event is received it retrieves the object, enriches the contained
+// profiles, and then stores them in our primary db
+func (w *Worker) Receive() error {
+	ctx := context.Background()
+	err := w.sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+		err := w.handleFileEvent(msg)
+		if err != nil {
+			log.Warnf("Error handling file event: %v", err)
+		} else {
+			msg.Ack()
+		}
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
